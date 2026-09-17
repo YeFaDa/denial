@@ -20,6 +20,7 @@ import '../localization/denial_localizations.dart';
 import '../models/display_layout.dart';
 import '../models/denial_window.dart';
 import '../platform/denial_bridge.dart';
+import '../platform/install_paths.dart';
 import '../services/audio_service.dart';
 import '../services/bluetooth_service.dart';
 import '../services/desktop_power_modes_service.dart';
@@ -723,10 +724,11 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
         break;
       }
     }
-    final binary = environment['DENIAL_SETTINGS_BINARY']?.trim();
-    final executable = binary == null || binary.isEmpty
-        ? '/usr/bin/denial-settings'
-        : binary;
+    final executable = InstallPaths.fromStartup(environment).executable(
+      'denial-settings',
+      overrides: const <String>['DENIAL_SETTINGS_BINARY'],
+      fallback: '/usr/bin/denial-settings',
+    );
     ref.read(denialBridgeProvider).launchApplication(<String>[
       executable,
       if (page != null) '--page=${page.name}',

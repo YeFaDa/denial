@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/startup_environment.dart';
 import '../models/ui_development.dart';
 import '../platform/denial_bridge.dart';
+import '../platform/install_paths.dart';
 import 'shell_controller.dart';
 
 final uiDevelopmentProvider =
@@ -13,11 +14,13 @@ final uiDevelopmentProvider =
       UiDevelopmentController.new,
     );
 
-final uiWorkspaceSetupProvider = Provider<UiWorkspaceSetupService>(
-  (ref) => SystemUiWorkspaceSetupService(
-    environment: ref.watch(startupEnvironmentProvider).values,
-  ),
-);
+final uiWorkspaceSetupProvider = Provider<UiWorkspaceSetupService>((ref) {
+  final startup = ref.watch(startupEnvironmentProvider);
+  return SystemUiWorkspaceSetupService(
+    environment: startup.values,
+    resolvedExecutable: startup.resolvedExecutable,
+  );
+});
 
 abstract interface class UiWorkspaceSetupService {
   bool get available;
@@ -26,28 +29,37 @@ abstract interface class UiWorkspaceSetupService {
 }
 
 class SystemUiWorkspaceSetupService implements UiWorkspaceSetupService {
-  const SystemUiWorkspaceSetupService({
+  SystemUiWorkspaceSetupService({
     Map<String, String> environment = const <String, String>{},
-  }) : _environment = environment;
+    String resolvedExecutable = '',
+  }) : _environment = environment,
+       _paths = InstallPaths(
+         environment: environment,
+         resolvedExecutable: resolvedExecutable,
+       );
 
   final Map<String, String> _environment;
+  final InstallPaths _paths;
 
-  String get _controlTool =>
-      _tool(variable: 'DENIAL_CONTROL_TOOL', fallback: '/usr/bin/denialctl');
+  String get _controlTool => _paths.executable(
+    'denialctl',
+    overrides: const <String>['DENIAL_CONTROL_TOOL'],
+    fallback: '/usr/bin/denialctl',
+  );
 
-  String get _developmentTool => _tool(
-    variable: 'DENIAL_DEVELOPMENT_TOOL',
+  String get _developmentTool => _paths.executable(
+    'denial-ui',
+    overrides: const <String>['DENIAL_DEVELOPMENT_TOOL'],
     fallback: '/usr/bin/denial-ui',
   );
 
-  String _tool({required String variable, required String fallback}) {
-    final configured = _environment[variable]?.trim();
-    return configured == null || configured.isEmpty ? fallback : configured;
-  }
-
   @override
   bool get available =>
-      File(_controlTool).existsSync() && File(_developmentTool).existsSync();
+      _resolvesTool('denialctl', 'DENIAL_CONTROL_TOOL') &&
+      _resolvesTool('denial-ui', 'DENIAL_DEVELOPMENT_TOOL');
+
+  bool _resolvesTool(String name, String variable) =>
+      _paths.findExecutable(name, overrides: <String>[variable]) != null;
 
   @override
   Future<void> setup() async {

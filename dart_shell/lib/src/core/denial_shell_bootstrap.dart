@@ -29,7 +29,10 @@ Future<void> runDenialShell({
     enabled: environment.flag('DENIAL_RENDER_AUDIT'),
   );
   final wallpaperStore = WallpaperStore(
-    RuntimePaths(environment: environment.values),
+    RuntimePaths(
+      environment: environment.values,
+      resolvedExecutable: environment.resolvedExecutable,
+    ),
   );
   final initialWallpaper =
       await wallpaperStore.read() ?? WallpaperAssignment.initial();

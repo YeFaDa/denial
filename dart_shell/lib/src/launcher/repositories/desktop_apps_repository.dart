@@ -210,13 +210,7 @@ class DesktopAppsRepository {
       return File(trimmed).existsSync();
     }
 
-    final path =
-        _paths.environment['PATH'] ??
-        '/usr/local/sbin:/usr/local/bin:/usr/bin:/bin';
-    for (final dir in path.split(':')) {
-      if (dir.isEmpty) {
-        continue;
-      }
+    for (final dir in _paths.pathDirs) {
       if (File(p.join(dir, trimmed)).existsSync()) {
         return true;
       }

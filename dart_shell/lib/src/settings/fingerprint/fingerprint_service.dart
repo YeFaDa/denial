@@ -6,6 +6,9 @@ import 'package:dbus/dbus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/startup_environment.dart';
+import '../../platform/install_paths.dart';
+
 /// Discovery never queries enrolled fingerprints or claims the reader.
 final fingerprintDeviceProvider = StreamProvider.autoDispose<bool>((
   ref,
@@ -57,7 +60,9 @@ const fingerprintNames = <String>[
 
 final fingerprintSessionProvider =
     Provider.autoDispose<FingerprintSettingsSession>((ref) {
-      final session = FingerprintSettingsSession();
+      final session = FingerprintSettingsSession(
+        paths: InstallPaths.fromStartup(ref.watch(startupEnvironmentProvider)),
+      );
       ref.onDispose(session.dispose);
       return session;
     });
@@ -65,6 +70,10 @@ final fingerprintSessionProvider =
 /// A private sudo process owns the authorization and all enrollment commands.
 /// Passwords travel only through stdin, never argv, environment, or logs.
 class FingerprintSettingsSession extends ChangeNotifier {
+  FingerprintSettingsSession({required InstallPaths paths}) : _paths = paths;
+
+  final InstallPaths _paths;
+
   bool authorized = false;
   bool authenticating = false;
   bool enrolling = false;
@@ -92,16 +101,22 @@ class FingerprintSettingsSession extends ChangeNotifier {
     status = null;
     _password = password;
     notifyListeners();
+    final sudo = _paths.findExecutable('sudo');
+    if (sudo == null) {
+      _fail('unavailable', generation);
+      return;
+    }
+    final deniald = _paths.executable('deniald', fallback: '/usr/bin/deniald');
     try {
       final process = await Process.start(
-        '/usr/bin/sudo',
+        sudo,
         [
           '-S',
           '-k',
           '-p',
           'DENIAL_SETTINGS_PASSWORD:',
           '--',
-          '/usr/bin/deniald',
+          deniald,
           '--fingerprint-settings',
         ],
         environment: {'LC_ALL': 'C'},

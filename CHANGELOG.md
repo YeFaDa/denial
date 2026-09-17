@@ -36,6 +36,12 @@ boundaries may change before 1.0.
 
 ### Changed
 
+- The Flutter shell and Settings bundle now resolve Denial's own executables
+  and default data directories at runtime instead of compiled-in `/usr` paths.
+  `DENIAL_PREFIX` relocates every compiled default in one step, the directory
+  holding the running compositor is consulted next, and `PATH` supplies host
+  tools such as `sudo`. An installation outside `/usr` therefore no longer
+  needs `DENIAL_SETTINGS_BINARY` or `DENIAL_CONTROL_TOOL`.
 - Denial environment variables now prefer the consistent `DENIAL_*` prefix
   while accepting every existing `DENIA_*` spelling as a compatibility alias.
 - Clipboard history now provides searchable text, image and file cards, drag-to-drop actions, privacy states, and accessible controls.

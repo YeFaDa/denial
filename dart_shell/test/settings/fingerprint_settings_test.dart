@@ -1,4 +1,5 @@
 import 'package:denial_dart_shell/src/localization/denial_localizations.dart';
+import 'package:denial_dart_shell/src/platform/install_paths.dart';
 import 'package:denial_dart_shell/src/settings/fingerprint/fingerprint_service.dart';
 import 'package:denial_dart_shell/src/settings/widgets/settings_fingerprint_page.dart';
 import 'package:denial_dart_shell/src/settings/widgets/settings_navigation.dart';
@@ -11,8 +12,7 @@ void main() {
   testWidgets('password gate hides enrolled data and enrollment controls', (
     tester,
   ) async {
-    final session = FingerprintSettingsSession()
-      ..fingers = ['right-index-finger'];
+    final session = _session()..fingers = ['right-index-finger'];
     addTearDown(session.dispose);
     await tester.pumpWidget(_harness(const SettingsFingerprintPage(), session));
     expect(find.text('Sudo password'), findsOneWidget);
@@ -45,7 +45,7 @@ void main() {
   testWidgets('empty enrollment state offers selection and enrollment', (
     tester,
   ) async {
-    final session = FingerprintSettingsSession()..authenticating = true;
+    final session = _session()..authenticating = true;
     session.handleEvent({'event': 'ready', 'fingers': <String>[]});
     addTearDown(session.dispose);
     await tester.pumpWidget(_harness(const SettingsFingerprintPage(), session));
@@ -80,7 +80,7 @@ void main() {
   testWidgets('navigation only includes fingerprint with a detected reader', (
     tester,
   ) async {
-    final session = FingerprintSettingsSession();
+    final session = _session();
     addTearDown(session.dispose);
     Widget navigation(bool detected) => SettingsNavigation(
       selected: SettingsPageId.appearance,
@@ -101,6 +101,11 @@ void main() {
     expect(find.text('Fingerprint'), findsOneWidget);
   });
 }
+
+FingerprintSettingsSession _session() =>
+    FingerprintSettingsSession(
+      paths: InstallPaths(environment: const <String, String>{}),
+    );
 
 Widget _harness(Widget child, FingerprintSettingsSession session) =>
     ProviderScope(

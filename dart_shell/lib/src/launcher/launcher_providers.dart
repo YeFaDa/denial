@@ -5,8 +5,10 @@ import 'runtime_paths.dart';
 import 'services/screen_power_service.dart';
 
 final runtimePathsProvider = Provider<RuntimePaths>((ref) {
+  final startup = ref.watch(startupEnvironmentProvider);
   return RuntimePaths(
-    environment: ref.watch(startupEnvironmentProvider).values,
+    environment: startup.values,
+    resolvedExecutable: startup.resolvedExecutable,
   );
 });
 

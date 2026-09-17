@@ -3,12 +3,20 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../config/startup_environment.dart';
+import '../platform/install_paths.dart';
 
 class RuntimePaths {
-  RuntimePaths({required Map<String, String> environment})
-    : environment = Map.unmodifiable(environment);
+  RuntimePaths({
+    required Map<String, String> environment,
+    String resolvedExecutable = '',
+  }) : environment = Map.unmodifiable(environment),
+       _install = InstallPaths(
+         environment: environment,
+         resolvedExecutable: resolvedExecutable,
+       );
 
   final Map<String, String> environment;
+  final InstallPaths _install;
 
   String get homeDir {
     final home = environment['HOME'];
@@ -35,12 +43,10 @@ class RuntimePaths {
       denialEnvironmentValue(environment, 'DENIAL_WALLPAPER_DIR') ??
       p.join(homeDir, 'Pictures', 'Wallpapers');
 
-  List<String> get dataDirs {
-    return (environment['XDG_DATA_DIRS'] ?? '/usr/local/share:/usr/share')
-        .split(':')
-        .where((dir) => dir.isNotEmpty)
-        .toList(growable: false);
-  }
+  List<String> get dataDirs => _install.dataDirs;
+
+  /// `PATH`, or the prefix-relative default when it is unset.
+  List<String> get pathDirs => _install.pathDirs;
 
   String get powerdControlSocketPath =>
       denialEnvironmentValue(environment, 'DENIAL_POWERD_CONTROL_SOCKET') ??
@@ -99,14 +105,6 @@ class RuntimePaths {
   }
 
   static List<String> uniquePaths(Iterable<String> paths) {
-    final seen = <String>{};
-    final unique = <String>[];
-    for (final path in paths) {
-      if (path.isEmpty || !seen.add(path)) {
-        continue;
-      }
-      unique.add(path);
-    }
-    return unique;
+    return InstallPaths.uniquePaths(paths);
   }
 }

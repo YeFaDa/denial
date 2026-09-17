@@ -28,20 +28,30 @@ String? denialEnvironmentValue(Map<String, String> environment, String name) {
 /// Immutable process environment captured before Flutter starts.
 ///
 /// Runtime code consumes this snapshot through [startupEnvironmentProvider].
-/// Keeping the only [Platform.environment] read here prevents lazy providers
-/// and render paths from consulting mutable process-global state.
+/// Keeping the only [Platform.environment] and [Platform.resolvedExecutable]
+/// reads here prevents lazy providers and render paths from consulting mutable
+/// process-global state.
 @immutable
 class StartupEnvironment {
-  StartupEnvironment(Map<String, String> values)
+  StartupEnvironment(Map<String, String> values, {this.resolvedExecutable = ''})
     : values = Map<String, String>.unmodifiable(values);
 
-  const StartupEnvironment.empty() : values = const <String, String>{};
+  const StartupEnvironment.empty()
+    : values = const <String, String>{},
+      resolvedExecutable = '';
 
   factory StartupEnvironment.capture() {
-    return StartupEnvironment(Platform.environment);
+    return StartupEnvironment(
+      Platform.environment,
+      resolvedExecutable: Platform.resolvedExecutable,
+    );
   }
 
   final Map<String, String> values;
+
+  /// Path of the process which loaded Flutter. The shell's bundle is loaded by
+  /// the compositor, so this identifies the running Denial installation.
+  final String resolvedExecutable;
 
   String? operator [](String key) => denialEnvironmentValue(values, key);
 
